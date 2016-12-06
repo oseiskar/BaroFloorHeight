@@ -1,6 +1,6 @@
 package xyz.osei.baro;
 
-public class PressureToHeight implements BaroAltitudeFilter.Observer {
+public class PressureToHeight {
 
     private final static double T0 = 273.15; // zero Celsius to Kelvin
     private final static double L = -6.5e-3; // K/m, atmospheric lapse rate
@@ -10,34 +10,24 @@ public class PressureToHeight implements BaroAltitudeFilter.Observer {
     // g = 9.80665; // m/s^2, standard gravity
     private final static double pressureExp = - L * 287.053 / 9.80665; // = -L*R/g = −0.190263189
 
-    @Override
-    public void observePressureQuotient(double pOverP0, double err) {
-
-        System.out.println("observed p/p0 "+pOverP0+" +- "+err);
-
-        final double TCelsius = 20; // assumed air temperature, Celsius
-        final double TDiff = 30; // about temperature difference in transition
-
-        double height = pressureToHeight(pOverP0, TCelsius);
-        double minHeight = pressureToHeight(pOverP0+err, TCelsius+TDiff/2);
-        double maxHeight = pressureToHeight(pOverP0-err, TCelsius-TDiff/2);
-
-        double heightErr = Math.max(maxHeight-height, height-minHeight);
-
-        observer.observeHeight(height, heightErr);
-    }
+    private final static double TCelsiusDefault = 20; // assumed air temperature, Celsius
 
     static double pressureToHeight(double pOverP0, double TCelsius) {
         return (TCelsius+T0)/L * (Math.pow(pOverP0, pressureExp) - 1);
     }
 
-    interface Observer {
-        void observeHeight(double height, double err);
+    static double pressureToHeight(double pOverP0) {
+        return pressureToHeight(pOverP0, TCelsiusDefault);
     }
 
-    final Observer observer;
+    static double pressureToHeightError(double pOverP0, double err) {
 
-    PressureToHeight(Observer obs) {
-        observer = obs;
+        final double TDiff = 30; // about temperature difference in transition
+        final double TCelsius = TCelsiusDefault;
+
+        double height = pressureToHeight(pOverP0, TCelsius);
+        double minHeight = pressureToHeight(pOverP0+err, TCelsius+TDiff/2);
+        double maxHeight = pressureToHeight(pOverP0-err, TCelsius-TDiff/2);
+        return Math.max(maxHeight-height, height-minHeight);
     }
 }

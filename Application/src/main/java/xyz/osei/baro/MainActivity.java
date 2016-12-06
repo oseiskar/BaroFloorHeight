@@ -11,11 +11,37 @@ import android.view.View;
 import android.widget.Button;
 import android.widget.TextView;
 
-public class MainActivity extends Activity implements SensorEventListener, PressureToHeight.Observer {
+public class MainActivity extends Activity implements SensorEventListener, BaroAltitudeFilter.Observer {
 
     private SensorManager sensorManager;
-    private BaroAltitudeFilter baroAltitudeFilter;
+    private BaroAltitudeFilter activeFilter, previousFilter;
     private BaroGraphFilter graphFilter;
+    private Button button;
+
+    enum State {
+        UNCALIBRATED(false, R.string.calibratingText),
+        BEFORE_TRANSITION(true, R.string.startTransitionText),
+        TRANSITION(true, R.string.endTransitionText),
+        AFTER_TRANSITION_UNCALIBRATED(false, R.string.collectingMoreDataText),
+        DONE(true, R.string.startNextTransitionText);
+
+        boolean canPushButton;
+        int buttonTextId;
+
+        State(boolean button, int textId) {
+            canPushButton = button;
+            buttonTextId = textId;
+        }
+
+        State getNext() {
+            if (this == DONE) return TRANSITION;
+            else {
+                return values()[this.ordinal()+1];
+            }
+        }
+    }
+
+    State state;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -24,24 +50,40 @@ public class MainActivity extends Activity implements SensorEventListener, Press
 
         graphFilter = new BaroGraphFilter((GraphView)findViewById(R.id.graphView));
         sensorManager = (SensorManager) getSystemService(SENSOR_SERVICE);
-        baroAltitudeFilter = new BaroAltitudeFilter(new PressureToHeight(this));
+        activeFilter = new BaroAltitudeFilter(this);
 
-        final Button button = (Button)findViewById(R.id.button);
+        state = State.UNCALIBRATED;
+        button = (Button)findViewById(R.id.button);
+        button.setEnabled(state.canPushButton);
 
         button.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                if (baroAltitudeFilter.isTransitionActive()) {
-                    // end transition
-                    button.setText(R.string.startTransitionText);
-                    baroAltitudeFilter.endTransition();
-                } else {
-                    // begin transition
-                    button.setText(R.string.endTransitionText);
-                    baroAltitudeFilter.beginTransition();
-                }
+                if (state.canPushButton) nextState();
             }
         });
+    }
+
+    private void nextState() {
+
+        System.out.println("State transition "+state+" -> "+state.getNext());
+
+        state = state.getNext();
+        button.setText(state.buttonTextId);
+        button.setEnabled(state.canPushButton);
+
+        switch (state) {
+            case TRANSITION:
+                previousFilter = activeFilter;
+                activeFilter = null;
+                break;
+            case AFTER_TRANSITION_UNCALIBRATED:
+                activeFilter = new BaroAltitudeFilter(this);
+                break;
+            case DONE:
+                computeAndShowHeight();
+                break;
+        }
     }
 
     @Override
@@ -66,16 +108,30 @@ public class MainActivity extends Activity implements SensorEventListener, Press
     @Override
     public void onSensorChanged(SensorEvent event) {
         if (event.sensor.getType() == Sensor.TYPE_PRESSURE) {
-            baroAltitudeFilter.pushValue(event.timestamp, event.values[0]);
+            if (activeFilter != null) activeFilter.pushValue(event.timestamp, event.values[0]);
             graphFilter.pushValue(event.timestamp, event.values[0]);
         }
     }
 
-    @Override
-    public void observeHeight(double height, double err) {
+    private void computeAndShowHeight() {
+        double p0 = previousFilter.getFiltered();
+        final double p1 = activeFilter.getFiltered();
+        final double maxDiff = Math.max(previousFilter.getMaxDiff(), activeFilter.getMaxDiff());
+
+        final double q = p1/p0;
+        final double qMax = (p1+maxDiff)/(p0-maxDiff);
+        final double qMin = (p1-maxDiff)/(p0+maxDiff);
+        final double qErr = Math.max(qMax - q, q - qMin);
+
+        final double height = PressureToHeight.pressureToHeight(q);
+        final double err = PressureToHeight.pressureToHeightError(q, qErr);
 
         String text = String.format("%.2f ± %.2f m", height, err);
         ((TextView)findViewById(R.id.floorHeightText)).setText(text);
+    }
 
+    @Override
+    public void observeCalibrated() {
+        nextState();
     }
 }
