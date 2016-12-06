@@ -6,7 +6,7 @@ public class BaroGraphFilter {
     private int nSinceLast = 0;
     private double runningSum = 0;
 
-    private static final long UPDATE_INTERVAL = 0; //100; // ms
+    private static final long UPDATE_INTERVAL = 1000; // microseconds
     private static final long MIN_SAMPLES = 1;
 
     public interface Observer {

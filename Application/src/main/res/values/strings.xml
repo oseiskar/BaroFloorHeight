@@ -16,8 +16,9 @@ limitations under the License.
 -->
 
 <resources>
-    <string name="buttonLabel">Begin transition</string>
-    <string name="floorHeightLabel">Floor height</string>
+    <string name="startTransitionText">Begin transition</string>
+    <string name="endTransitionText">End transition</string>
+    <string name="floorHeightLabel">Altitude difference</string>
     <string name="floorHeightPlaceholder">-</string>
-    <string name="customViewLabel">Barometer graph</string>
+    <string name="customViewLabel">Barometer</string>
 </resources>

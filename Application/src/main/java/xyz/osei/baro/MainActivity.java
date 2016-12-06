@@ -7,8 +7,11 @@ import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
 import android.hardware.SensorManager;
 import android.os.Bundle;
+import android.view.View;
+import android.widget.Button;
+import android.widget.TextView;
 
-public class MainActivity extends Activity implements SensorEventListener {
+public class MainActivity extends Activity implements SensorEventListener, PressureToHeight.Observer {
 
     private SensorManager sensorManager;
     private BaroAltitudeFilter baroAltitudeFilter;
@@ -21,7 +24,24 @@ public class MainActivity extends Activity implements SensorEventListener {
 
         graphFilter = new BaroGraphFilter((GraphView)findViewById(R.id.graphView));
         sensorManager = (SensorManager) getSystemService(SENSOR_SERVICE);
-        baroAltitudeFilter = new BaroAltitudeFilter();
+        baroAltitudeFilter = new BaroAltitudeFilter(new PressureToHeight(this));
+
+        final Button button = (Button)findViewById(R.id.button);
+
+        button.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                if (baroAltitudeFilter.isTransitionActive()) {
+                    // end transition
+                    button.setText(R.string.startTransitionText);
+                    baroAltitudeFilter.endTransition();
+                } else {
+                    // begin transition
+                    button.setText(R.string.endTransitionText);
+                    baroAltitudeFilter.beginTransition();
+                }
+            }
+        });
     }
 
     @Override
@@ -49,5 +69,13 @@ public class MainActivity extends Activity implements SensorEventListener {
             baroAltitudeFilter.pushValue(event.timestamp, event.values[0]);
             graphFilter.pushValue(event.timestamp, event.values[0]);
         }
+    }
+
+    @Override
+    public void observeHeight(double height, double err) {
+
+        String text = String.format("%.2f ± %.2f m", height, err);
+        ((TextView)findViewById(R.id.floorHeightText)).setText(text);
+
     }
 }

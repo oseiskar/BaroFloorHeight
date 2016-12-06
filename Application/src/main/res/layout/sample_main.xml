@@ -36,7 +36,7 @@ limitations under the License.
             <Button
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="@string/buttonLabel"
+                    android:text="@string/startTransitionText"
                     android:id="@+id/button"
                 android:layout_alignParentTop="true"
                 android:layout_alignParentLeft="true"
@@ -59,7 +59,7 @@ limitations under the License.
                     android:layout_height="wrap_content"
                     android:textAppearance="?android:attr/textAppearanceLarge"
                     android:text="@string/floorHeightPlaceholder"
-                    android:textSize="60sp"
+                    android:textSize="30sp"
                     android:id="@+id/floorHeightText"
                     android:layout_below="@+id/floorHeightLabel"
                     android:gravity="center_vertical|center_horizontal"
