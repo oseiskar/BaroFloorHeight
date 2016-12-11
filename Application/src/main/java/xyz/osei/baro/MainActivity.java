@@ -8,6 +8,7 @@ import android.hardware.SensorEventListener;
 import android.hardware.SensorManager;
 import android.os.Bundle;
 import android.view.View;
+import android.view.WindowManager;
 import android.widget.Button;
 import android.widget.TextView;
 
@@ -47,6 +48,7 @@ public class MainActivity extends Activity implements SensorEventListener, BaroA
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.sample_main);
+        getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
 
         graphFilter = new BaroGraphFilter((GraphView)findViewById(R.id.graphView));
         sensorManager = (SensorManager) getSystemService(SENSOR_SERVICE);
