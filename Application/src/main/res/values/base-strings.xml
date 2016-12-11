@@ -19,7 +19,7 @@
     <string name="app_name">Baro floor height</string>
     <string name="intro_message">
         <![CDATA[
-        ...
+        Measure the height of storeys and buildings using the barometer of your phone.
         ]]>
     </string>
 </resources>
