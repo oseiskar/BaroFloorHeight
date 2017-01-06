@@ -6,20 +6,19 @@ public class BaroAltitudeFilter {
         void observeCalibrated();
     }
 
-    private static double CALIBRATION_TIME = 3_000_000_000L; // nanoseconds
+    private static double CALIBRATION_TIME_SECONDS = 3.;
+    private static double EMA_HALF_LIFE_SECONDS = 1.0;
 
-    private static int EXP_WINDOW_LENGTH_SAMPLES = 100;
-    private static final double ALPHA = 1.0 - Math.pow(2, -1.0 / EXP_WINDOW_LENGTH_SAMPLES);
-
-    private double v = 0.0;
-    private double total = 0.0;
     private double maxDiff = 0.0;
 
-    private long firstTimestamp = 0;
+    private long firstTimestamp = -1;
+    private double prevT = 0;
     private int nSamples = 0;
 
+    private EmaFilter filter = new EmaFilter(EMA_HALF_LIFE_SECONDS);
+
     public double getFiltered() {
-        return v / total;
+        return filter.get();
     }
 
     public double getMaxDiff() {
@@ -27,15 +26,21 @@ public class BaroAltitudeFilter {
     }
 
     void pushValue(long timestamp, double x) {
-        v = ALPHA * x + (1-ALPHA) * v;
-        total = ALPHA * 1.0 + (1-ALPHA) * total;
-        if (firstTimestamp == 0) {
+
+        if (firstTimestamp < 0) {
             firstTimestamp = timestamp;
+            return; // ignore first sample
         }
+        double t = (timestamp - firstTimestamp) * 1e-9;
+        double dt = t - prevT;
+        prevT = t;
+
+        filter.update(x, dt);
+
         maxDiff = Math.max(maxDiff, Math.abs(getFiltered() - x));
         nSamples++;
 
-        if (!calibrated && timestamp > firstTimestamp + CALIBRATION_TIME) {
+        if (!calibrated && t > CALIBRATION_TIME_SECONDS) {
             calibrated = true;
             System.out.println("calibrated after "+nSamples+" sample(s)");
             observer.observeCalibrated();
