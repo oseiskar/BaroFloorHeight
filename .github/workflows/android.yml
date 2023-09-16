@@ -21,7 +21,7 @@ jobs:
       name: Sign app APK
       id: sign_app
       with:
-        releaseDirectory: app/build/outputs/bundle/release
+        releaseDirectory: Application/build/outputs/bundle/release
         signingKeyBase64: ${{ secrets.SIGNING_KEY }}
         # key/store passwords are redundant security layers in this context
         alias: upload-self-cert
